@@ -1,0 +1,140 @@
+#The code for CPM is given below, based on the pseudocode above:
+
+
+import networkx as nx
+import time
+import sys
+
+def find_maximal_cliques(G):
+  # wrapper function for NetworkX's maximal clique finder
+  return list(nx.find_cliques(G))
+
+def create_empty_graph():
+  # wrapper function for NetworkX's empty graph constructor
+  return nx.Graph()
+
+def add_nodes(H, C):
+  # add nodes to H from C
+  for c in C:
+    H.add_node(c)
+
+def add_edge(H, c1, c2):
+  # add edge to H between c1 and c2
+  H.add_edge(c1, c2)
+
+def find_connected_components(H):
+  # wrapper function for NetworkX's connected component finder
+  return list(nx.connected_components(H))
+
+def CPM(G, k):
+  # CPM algorithm
+  # G is the input network
+  # k is the size of the cliques
+  # returns a list of communities
+
+  # find all maximal cliques in G
+  C = find_maximal_cliques(G)
+
+  # filter out cliques with less than k nodes
+  C = [c for c in C if len(c) >= k]
+
+  # construct a clique graph H
+  H = create_empty_graph()
+  add_nodes(H, C) # each node is a clique
+
+  # for each pair of cliques, check if they are adjacent and add an edge if so
+  for i in range(len(C)):
+    for j in range(i + 1, len(C)):
+      if len(set(C[i]) & set(C[j])) == k - 1: # intersection size is k - 1
+        add_edge(H, tuple(C[i]), tuple(C[j]))
+
+  # find the connected components of H
+  CC = find_connected_components(H)
+
+  # for each connected component, merge the cliques into a community
+  R = [] # result list
+  for cc in CC:
+    S = set() # community set
+    for c in cc:
+      S = S | set(c) # union operation
+    R.append(S) # add community to result
+
+  return R
+
+
+
+The code for testing CPM on different networks is given below:
+
+
+# load some test networks from NetworkX's data sets
+G_karate = nx.karate_club_graph() # karate club network
+G_dolphin = nx.read_gml("dolphins.gml") # dolphin network
+G_football = nx.read_gml("football.gml") # football network
+
+# load the amazon network from a file (downloaded from https://snap.stanford.edu/data/com-Amazon.html)
+G_amazon = nx.read_edgelist("com-amazon.ungraph.txt")
+
+# define a function to compare CPM with Louvain's algorithm
+def compare_methods(G, k):
+  
+  # import Louvain's algorithm from python-louvain library
+  import community as cm
+
+  # measure the time and memory usage of CPM
+  start_time = time.time()
+  start_mem = sys.getsizeof(G)
+  
+  # run CPM on G with k-clique size parameter k
+  CPM_communities = CPM(G, k)
+
+  # measure the end time and memory usage of CPM
+  end_time = time.time()
+  end_mem = sys.getsizeof(G)
+
+  # calculate the elapsed time and memory usage of CPM
+  CPM_time = end_time - start_time
+  CPM_mem = end_mem - start_mem
+
+  
+   measure the time and memory usage of Louvain's algorithm
+  
+   start_time = time.time()
+   start_mem = sys.getsizeof(G)
+  
+   run Louvain's algorithm on G
+  
+   Louvain_communities = cm.best_partition(G)
+
+   measure the end time and memory usage of Louvain's algorithm
+  
+   end_time = time.time()
+   end_mem = sys.getsizeof(G)
+
+   calculate the elapsed time and memory usage of Louvain's algorithm
+  
+   Louvain_time = end_time - start_time
+   Louvain_mem = end_mem - start_mem
+
+  
+   print the results
+  
+   print("CPM found", len(CPM_communities), "communities in", CPM_time, "seconds using", CPM_mem, "bytes")
+   print("Louvain found", len(set(Louvain_communities.values())), "communities in", Louvain_time, "seconds using", Louvain_mem, "bytes")
+
+# test CPM on different networks with different values of k
+
+print("Testing on karate club network")
+compare_methods(G_karate, k=3)
+compare_methods(G_karate, k=4)
+
+print("Testing on dolphin network")
+compare_methods(G_dolphin, k=3)
+compare_methods(G_dolphin, k=4)
+
+print("Testing on football network")
+compare_methods(G_football, k=3)
+compare_methods(G_football, k=4)
+
+print("Testing on amazon network")
+compare_methods(G_amazon, k=3)
+compare_methods(G_amazon, k=4)
